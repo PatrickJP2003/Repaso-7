@@ -1,49 +1,39 @@
-import { StyleSheet, Text, View, Button } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 
-export default function MapaScreen() {
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [region, setRegion] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
+const initialRegion = {
+  latitude: 0,
+  longitude: 0,
+  latitudeDelta: 0.5,
+  longitudeDelta: 0.5,
+};
 
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permiso para acceder a la ubicación denegado');
-        return;
-      }
-    })();
-  }, []);
+export default function MapaScreen() {
+  const [region, setRegion] = useState(initialRegion);
 
   const obtenerUbicacion = async () => {
     try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permiso para acceder a la ubicación denegado');
+        return;
+      }
+
       let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
       setRegion({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       });
+
     } catch (error) {
-      setErrorMsg('Error al obtener la ubicación');
+      console.log('Error al obtener la ubicación:', error);
+      alert('Error al obtener la ubicación');
     }
   };
-
-  let text = 'Esperando..';
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = `Latitud: ${location.coords.latitude}, Longitud: ${location.coords.longitude}`;
-  }
 
   return (
     <View style={styles.container}>
@@ -52,18 +42,19 @@ export default function MapaScreen() {
         region={region}
         onRegionChangeComplete={setRegion}
       >
-        {location && (
+        {region.latitude !== 0 && region.longitude !== 0 && (
           <Marker
             coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
+              latitude: region.latitude,
+              longitude: region.longitude,
             }}
             title="Mi ubicación"
           />
         )}
       </MapView>
-      <Button title="Obtener Ubicación" onPress={obtenerUbicacion} />
-      <Text>{text}</Text>
+      <TouchableOpacity style={styles.button} onPress={obtenerUbicacion}>
+        <Text style={styles.buttonText}>Obtener Ubicación Actual</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -73,7 +64,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    width: '100%',
-    height: '80%',
+    flex: 1,
+  },
+  button: {
+    backgroundColor: '#005B41',
+    borderRadius: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
